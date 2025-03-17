@@ -1,41 +1,47 @@
+const { off } = require('process');
 const db = require('../mariadb');
 const {StatusCodes} = require('http-status-codes');
 
 const allBooks = (req,res)=>{
-    let {category_id} = req.query;
-    console.log(category_id)
+    let {category_id, news, limit, currentPage} = req.query;
+    
+    let offset = limit * (currentPage-1);
 
-    if(category_id){
-        const sql = "SELECT * FROM books WHERE cetagory_id = ?"
-        db.query(sql, category_id, (err, results)=>{
-            if (err){
-                console.log(err);
-                return res.status(StatusCodes.BAD_REQUEST).end();
-            }
+    let sql = "SELECT * FROM books";
+    let values = [];
 
-            if(results.length)
-                return res.status(StatusCodes.OK).json(results);
-            else
-                return res.status(StatusCodes.NOT_FOUND).end();
-        });
-    }else {
-        const sql = "SELECT * FROM books"
-        db.query(sql, (err, results)=>{
-            if (err){
-                console.log(err);
-                return res.status(StatusCodes.BAD_REQUEST).end();
-            }
+    if (category_id && news) {
+        sql += " WHERE category_id = ? AND pub_date BETWEEN DATE_SUB(NOW(), INTERVAL 24 Month) AND NOW();";
+        values = [parseInt(category_id)];
+    } else if(category_id) {
+        sql += " WHERE category_id = ?";
+        values = [parseInt(category_id)];
+    } else if (news) {
+        sql += " WHERE pub_date BETWEEN DATE_SUB(NOW(), INTERVAL 24 Month) AND NOW();";
+    }
 
-            return res.status(StatusCodes.OK).json(results)
+    sql += " LIMIT ?,?"
+    values.push(offset, parseInt(limit))
+    console.log(sql,values)
+
+    db.query(sql, values, (err, results)=>{
+        if (err){
+            console.log(err);
+            return res.status(StatusCodes.BAD_REQUEST).end();
+        }
+
+        if(results.length)
+            return res.status(StatusCodes.OK).json(results);
+        else
+            return res.status(StatusCodes.NOT_FOUND).end();
     });
 }
-
-};
 
 const bookDetail = (req,res)=>{
     let {id} = req.params;
     
-    const sql = "SELECT * FROM books WHERE id = ?"
+    const sql = `SELECT * FROM books LEFT JOIN category
+                ON books.category_id = category.id  WHERE books.id=?`
     db.query(sql, id, (err, results)=>{
         if (err){
             console.log(err);
