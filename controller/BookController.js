@@ -4,10 +4,8 @@ const {StatusCodes} = require('http-status-codes');
 
 const allBooks = (req,res)=>{
     let {category_id, news, limit, currentPage} = req.query;
-    
-    let offset = limit * (currentPage-1);
 
-    let sql = "SELECT * FROM books";
+    let sql = "SELECT *, (SELECT count(*) FROM likes WHERE liked_book_id=books.id) AS likes FROM Bookshop.books";
     let values = [];
 
     if (category_id && news) {
@@ -19,10 +17,12 @@ const allBooks = (req,res)=>{
     } else if (news) {
         sql += " WHERE pub_date BETWEEN DATE_SUB(NOW(), INTERVAL 24 Month) AND NOW();";
     }
-
-    sql += " LIMIT ?,?"
-    values.push(offset, parseInt(limit))
-    console.log(sql,values)
+    
+    if (limit && currentPage){
+        let offset = limit * (currentPage-1);
+        sql += " LIMIT ?,?"
+        values.push(offset, parseInt(limit))
+    }
 
     db.query(sql, values, (err, results)=>{
         if (err){
@@ -38,11 +38,18 @@ const allBooks = (req,res)=>{
 }
 
 const bookDetail = (req,res)=>{
-    let {id} = req.params;
+    let {user_id} = req.body;
+    let book_id = req.params.id;
     
-    const sql = `SELECT * FROM books LEFT JOIN category
-                ON books.category_id = category.id  WHERE books.id=?`
-    db.query(sql, id, (err, results)=>{
+    let sql = `SELECT *,
+	                    (SELECT count(*) FROM likes WHERE liked_book_id=?) AS likes,
+                        (SELECT EXISTS (SELECT * FROM likes WHERE user_id=? AND liked_book_id=?)) AS liked
+                    FROM books 
+                    LEFT JOIN category
+                    ON books.category_id = category.id
+                    WHERE books.id=?;`
+    let values = [book_id, user_id,book_id, book_id]
+    db.query(sql, values, (err, results)=>{
         if (err){
             console.log(err);
             return res.status(StatusCodes.BAD_REQUEST).end();
@@ -55,25 +62,7 @@ const bookDetail = (req,res)=>{
     });
 }
 
-// const booksByCategory = (req,res)=>{
-//     let {category_id} = req.query;
-    
-//     const sql = "SELECT * FROM books WHERE cetagory_id = ?"
-//     db.query(sql, category_id, (err, results)=>{
-//         if (err){
-//             console.log(err);
-//             return res.status(StatusCodes.BAD_REQUEST).end();
-//         }
-
-//         if(results.length)
-//             return res.status(StatusCodes.OK).json(results);
-//         else
-//             return res.status(StatusCodes.NOT_FOUND).end();
-//     });
-// };
-
 module.exports = {
     allBooks,
     bookDetail,
-    // booksByCategory,
 };
