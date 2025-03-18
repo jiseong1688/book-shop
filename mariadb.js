@@ -8,6 +8,7 @@ const connection = mysql.createConnection({
     password: 'root',
     database: 'Bookshop',
     dateStrings: true,
+    multipleStatements: true
 });
 
 
