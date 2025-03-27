@@ -49,7 +49,7 @@ const login = (req,res)=>{
                     id: loginUser.id,
                     email: loginUser.email
                 }, process.env.SECRTE_KEY, {
-                    expiresIn: '30s',
+                    expiresIn: '5m',
                     issuer: "jiseong"
                 });
 

@@ -1,8 +1,7 @@
 const db = require('../mariadb');
 const {StatusCodes} = require('http-status-codes');
-const jwt = require("jsonwebtoken")
-const dotenv = require('dotenv')
-dotenv.config();
+const ensureAuthorization = require('../controller/auth');
+const jwt = require('jsonwebtoken')
 
 const addCartItem = (req,res)=>{
     const {book_id, quantity} = req.body;
@@ -87,19 +86,6 @@ const deleteCartItem =(req,res)=>{
         })
     }
 };
-
-function ensureAuthorization(req,res) {
-    try{
-        let recivedJWT = req.headers["authorization"];
-        console.log(recivedJWT)
-        let decodedJWT = jwt.verify(recivedJWT, process.env.SECRTE_KEY)
-        return decodedJWT
-    } catch(err){
-        console.log(err.name);
-        console.log(err.message);
-        return err
-    }
-}
 
 module.exports = {
     addCartItem,
