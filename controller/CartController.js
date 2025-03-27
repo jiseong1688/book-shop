@@ -1,57 +1,105 @@
 const db = require('../mariadb');
 const {StatusCodes} = require('http-status-codes');
+const jwt = require("jsonwebtoken")
+const dotenv = require('dotenv')
+dotenv.config();
 
 const addCartItem = (req,res)=>{
-    const {book_id, quantity, user_id} = req.body;
+    const {book_id, quantity} = req.body;
 
-    let sql = "INSERT INTO cartItems (book_id, quantity, user_id) VALUES (?, ?, ?);";
-    let values= [book_id, quantity, user_id];
-    db.query(sql, values, (err, results)=>{
-        if (err){
-            console.log(err);
-            return res.status(StatusCodes.BAD_REQUEST).end();
-        }
+    let authorization = ensureAuthorization(req, res)
+    if ( authorization instanceof jwt.TokenExpiredError){
+        return res.status(StatusCodes.UNAUTHORIZED).json({
+            "message": "로그인 세션이 만료되었습니다. 다시 로그인해주세요"
+        })
+    } else if (authorization instanceof jwt.JsonWebTokenError){
+        return res.status(StatusCodes.UNAUTHORIZED).json({
+            "message": "없는 토큰입니다."
+        })
+    } else {
+        let sql = "INSERT INTO cartItems (book_id, quantity, user_id) VALUES (?, ?, ?);";
+        let values= [book_id, quantity, authorization.id];
+        db.query(sql, values, (err, results)=>{
+            if (err){
+                console.log(err);
+                return res.status(StatusCodes.BAD_REQUEST).end();
+            }
 
-        return res.status(StatusCodes.OK).json(results)
-    })          
+            return res.status(StatusCodes.OK).json(results)
+        })
+    }
 };
 
 const getCartItem = (req,res)=>{
-    const {user_id, selected} = req.body;
+    const {selected} = req.body;
 
-    let sql = "SELECT c.id AS cart_id, b.id AS book_id, b.title, b.summary, c.quantity, b.price FROM books b LEFT JOIN cartItems c ON c.book_id = b.id WHERE c.user_id = ?";
-    let values= [user_id];
+    let authorization = ensureAuthorization(req, res)
+    if ( authorization instanceof jwt.TokenExpiredError){
+        return res.status(StatusCodes.UNAUTHORIZED).json({
+            "message": "로그인 세션이 만료되었습니다. 다시 로그인해주세요"
+        })
+    } else if (authorization instanceof jwt.JsonWebTokenError){
+        return res.status(StatusCodes.UNAUTHORIZED).json({
+            "message": "없는 토큰입니다."
+        })
+    } else {
+        let sql = "SELECT c.id AS cart_id, b.id AS book_id, b.title, b.summary, c.quantity, b.price FROM books b LEFT JOIN cartItems c ON c.book_id = b.id WHERE c.user_id = ?";
+        let values= [authorization.id];
 
-    if (selected) {
-        sql += " AND c.id IN (?)";
-        values.push(selected);
-    }
-
-    db.query(sql, values, (err, results)=>{
-        if (err){
-            console.log(err);
-            return res.status(StatusCodes.BAD_REQUEST).end();
+        if (selected) {
+            sql += " AND c.id IN (?)";
+            values.push(selected);
         }
 
-        return res.status(StatusCodes.OK).json(results)
-    })
+        db.query(sql, values, (err, results)=>{
+            if (err){
+                console.log(err);
+                return res.status(StatusCodes.BAD_REQUEST).end();
+            }
+
+            return res.status(StatusCodes.OK).json(results)
+        })
+    }
 };
 
 const deleteCartItem =(req,res)=>{
     const book_id = req.params.id;
-    const {user_id} = req.body;
+    let authorization = ensureAuthorization(req, res)
+    if ( authorization instanceof jwt.TokenExpiredError){
+        return res.status(StatusCodes.UNAUTHORIZED).json({
+            "message": "로그인 세션이 만료되었습니다. 다시 로그인해주세요"
+        })
+    } else if (authorization instanceof jwt.JsonWebTokenError){
+        return res.status(StatusCodes.UNAUTHORIZED).json({
+            "message": "없는 토큰입니다."
+        })
+    } else {
 
-    let sql = "DELETE FROM cartItems WHERE user_id = ? AND book_id = ?;";
-    let values= [user_id, book_id];
-    db.query(sql, values, (err, results)=>{
-        if (err){
-            console.log(err);
-            return res.status(StatusCodes.BAD_REQUEST).end();
-        }
+        let sql = "DELETE FROM cartItems WHERE user_id = ? AND book_id = ?;";
+        let values= [authorization.id, book_id];
+        db.query(sql, values, (err, results)=>{
+            if (err){
+                console.log(err);
+                return res.status(StatusCodes.BAD_REQUEST).end();
+            }
 
-        return res.status(StatusCodes.OK).json(results)
-    })     
+            return res.status(StatusCodes.OK).json(results)
+        })
+    }
 };
+
+function ensureAuthorization(req,res) {
+    try{
+        let recivedJWT = req.headers["authorization"];
+        console.log(recivedJWT)
+        let decodedJWT = jwt.verify(recivedJWT, process.env.SECRTE_KEY)
+        return decodedJWT
+    } catch(err){
+        console.log(err.name);
+        console.log(err.message);
+        return err
+    }
+}
 
 module.exports = {
     addCartItem,

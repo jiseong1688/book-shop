@@ -3,9 +3,17 @@ const db = require('../mariadb');
 
 const order = async (req,res)=>{
     try{
+        const db = await mysql.createConnection({
+            host: 'localhost',
+            user: 'root',
+            password: 'root',
+            database: 'Bookshop',
+            dateStrings: true,
+            multipleStatements: true
+        });
+
         const {user_id, items, delivery, totalQuantity, totalPrice} = req.body;
         let deliveryId; let sql; let values;
-
         if (delivery.id){
             deliveryId = delivery.id;
         } else {
@@ -49,11 +57,27 @@ const order = async (req,res)=>{
 const deleteCartItem = async(valueList) =>{
     const sql = `DELETE FROM cartItems WHERE id IN (?);`;
     const values = valueList;
+    const db = await mysql.createConnection({
+        host: 'localhost',
+        user: 'root',
+        password: 'root',
+        database: 'Bookshop',
+        dateStrings: true,
+        multipleStatements: true
+    });
 
     return await db.query(sql,[values])
 }
 
 const getOrders = async (req,res)=> {
+    const db = await mysql.createConnection({
+        host: 'localhost',
+        user: 'root',
+        password: 'root',
+        database: 'Bookshop',
+        dateStrings: true,
+        multipleStatements: true
+    });
     const {user_id} = req.body;
     let sql = `SELECT 
             o.id,
@@ -73,6 +97,14 @@ const getOrders = async (req,res)=> {
 }
 
 const getOrderDetail = async (req,res)=>{
+    const db = await mysql.createConnection({
+        host: 'localhost',
+        user: 'root',
+        password: 'root',
+        database: 'Bookshop',
+        dateStrings: true,
+        multipleStatements: true
+    });
     const order_id= req.params.id;
     let sql = `SELECT
             book_id,

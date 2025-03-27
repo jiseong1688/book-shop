@@ -1,8 +1,8 @@
 // Get the client
-const mysql = require('mysql2/promise');
+const mysql = require('mysql2');
 
 // Create the connection to database
-const conn = mysql.createPool({
+const conn = mysql.createConnection({
     host: 'localhost',
     user: 'root',
     password: 'root',

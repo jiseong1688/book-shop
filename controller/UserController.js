@@ -46,9 +46,10 @@ const login = (req,res)=>{
             const inputPassword = crypto.pbkdf2Sync(password, loginUser.salt, 10000, 64, 'sha512').toString('base64');
             if(loginUser && loginUser.password == inputPassword){
                 const token = jwt.sign({
+                    id: loginUser.id,
                     email: loginUser.email
                 }, process.env.SECRTE_KEY, {
-                    expiresIn: '5m',
+                    expiresIn: '30s',
                     issuer: "jiseong"
                 });
 
