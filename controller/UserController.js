@@ -12,9 +12,9 @@ const join = (req,res,next)=>{
     const salt = crypto.randomBytes(64).toString('base64');
     const hashPassword = crypto.pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('base64');
 
-    let selEmailSql = 'SELECT * FROM users WHERE email = ?';
-    let insertEmailSql = 'INSERT INTO users (email, password, salt) VALUES(?,?,?)';
-    db.query(selEmailSql,[email],(err, results)=>{
+    let sql = 'INSERT INTO users (email, password, salt) VALUES(?,?,?)';
+    let values = [email, hashPassword, salt];
+    db.query(sql,values,(err, results)=>{
         if(results && results.length >0){
             console.log("이미 있는 아이디 입니다.")
             res.status(StatusCodes.BAD_REQUEST).json({message: "이미 사용중인 아이디입니다."})
@@ -24,8 +24,12 @@ const join = (req,res,next)=>{
                     console.log(err)
                     return res.status(StatusCodes.NOT_FOUND).json({message:" 회원가입에 살패했습니다."})
                 }
-                console.log("회원가입에 성공하였습니다.")
-                res.status(StatusCodes.CREATED).json({message: `${email}으로 회원가입이 완료되었습니다.`})
+                
+                if (results.affectedRows){
+                    console.log("회원가입에 성공하였습니다.");
+                    return res.status(StatusCodes.CREATED).json(results);
+                }else
+                    return res.status(StatusCodes.UNAUTHORIZED).end();
             })
         }
     })

@@ -5,9 +5,9 @@ const jwt = require('jsonwebtoken')
 
 const addLike = (req,res)=>{
     const book_id = req.params.id;
-    // const {user_id} = req.body;
 
     let authorization = ensureAuthorization(req);
+    
     if ( authorization instanceof jwt.TokenExpiredError){
         return res.status(StatusCodes.UNAUTHORIZED).json({
             "message": "로그인 세션이 만료되었습니다. 다시 로그인해주세요"
@@ -32,9 +32,9 @@ const addLike = (req,res)=>{
 
 const removeLike = (req,res)=>{
     const book_id = req.params.id;
-    // const {user_id} = req.body;
 
     let authorization = ensureAuthorization(req);
+
     if ( authorization instanceof jwt.TokenExpiredError){
         return res.status(StatusCodes.UNAUTHORIZED).json({
             "message": "로그인 세션이 만료되었습니다. 다시 로그인해주세요"
